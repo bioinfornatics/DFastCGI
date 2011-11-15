@@ -1,0 +1,59 @@
+How Create a web application in D?
+
+Fastcgi
+-------
+
+* Install fastcgi and his header file
+  - fedora : yum install fcgi-devel fcgi
+
+Lighthttpd
+----------
+
+* Install lighthttpd on tour system:
+  - fedora : yum install lighttpd lighttpd-fastcgi 
+ 
+* Config lighthttpd:
+  - Create a config file into /etc/lighthttpd/conf.d/ like this one:
+server.document-root        = "/var/www/lighttpd/myWebAppName"
+socket_dir                  = "/tmp/"
+server.port                 = 80
+server.username             = "lighttpd" 
+server.groupname            = "lighttpd"
+server.tag                  = "Server"
+server.pid-file             = "/var/run/lighttpd.pid"
+server.errorlog             = "/var/log/lighttpd/error.log"
+accesslog.filename          = "/var/log/lighttpd/access.log"
+server.modules              += ( "mod_fastcgi" )
+#server.bind = "xxx.xxx.xxx.xxx" 
+
+fastcgi.server =    ( 
+                        "/fastcgi/myWebAppName" =>  ((
+                                        "bin-path"      => "/var/www/cgi-bin/myWebAppName.fcgi",
+                                        "max-procs"     => 1,
+                                        "socket"        => socket_dir + "myWebAppName.socket",
+                                        "check-local"   => "disable",
+                                                    ))
+                    )
+ 
+* Test this config file
+ $ lighthttpd -t -f /etc/lighttpd/conf.d/myWebAppName.conf
+
+* Create lighttpd user if he did not exist
+ $ su -c "useradd lighttpd"
+ $ su -c "passwd lighttpd"
+ $ chown -R /var/www/lighttpd
+ $ chown -R /var/log/lighttpd
+
+Build your web application
+--------------------------
+ $ ldc2 myWebApp.d -L-lfcgi -L-lDFastCGI -I=/usr/local/include/DFastCGI
+
+ $ su -c "install -o lighthttpd myWebApp /var/www/cgi-bin/myWebAppName.fcgi"
+
+* Run your server
+ $ lighttpd -D -f /etc/lighttpd/conf.d/myWebAppName.conf
+
+
+Now open with your browser  to: 127.0.0.1/fastcgi/myWebAppName
+
+Enjoy :-)

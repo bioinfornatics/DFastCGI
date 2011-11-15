@@ -25,6 +25,6 @@ If you build as shared lib remember to run ldconfig:
 EXAMPLES
 --------
 for build and test example you need link to your fastcgi library. I assume DFastCGI lib is in prefix /usr/local/ and fastci lib in /usr/lib64:
-$ ldc2 -O -g -w -I=/usr/local/include/d/DFastCGI/ -L=/usr/local/lib64/libDFastCGI-ldc.so -L=/usr/lib64/libfastcgi.so test_sql.d
-$ ./test_sql
+$ ldc2 -O -g -w -I=/usr/local/include/d/DFastCGI/ -L-lDFastCGI -L-lfcgi test_fcgiapp.d
+$ su -c 'install -o lighthttpd test_fcgiapp.fcgi /var/www/cgi-bin/test_fcgiapp.fcgi'
 
