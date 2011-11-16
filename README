@@ -28,3 +28,9 @@ for build and test example you need link to your fastcgi library. I assume DFast
 $ ldc2 -O -g -w -I=/usr/local/include/d/DFastCGI/ -L-lDFastCGI -L-lfcgi test_fcgiapp.d
 $ su -c 'install -o lighthttpd test_fcgiapp.fcgi /var/www/cgi-bin/test_fcgiapp.fcgi'
 
+
+PROBLEMS
+--------
+If your application fail during build because it do not found symbol provides by this library you could do:
+ # ldd /path/to/lib/libDFastCGI.so
+ # ldconfig /path/to/libdir/
