@@ -1,13 +1,16 @@
 module fastcgi.c.fastcgi;
 
+import fastcgi.protocol;
+import core.stdc.string : memset;
+
 extern (System) {
 /*
  * Listening socket file number
  */
-const(int) FCGI_LISTENSOCK_FILENO =   0;
+const(ubyte) FCGI_LISTENSOCK_FILENO =   0;
 
 struct FCGI_Header{
-    ubyte FCGI_version;
+    ubyte FCGI_version = FCGI_VERSION_1;
     ubyte type;
     ubyte requestIdB1;
     ubyte requestIdB0;
@@ -17,39 +20,39 @@ struct FCGI_Header{
     ubyte reserved;
 }
 
-const(int) FCGI_MAX_LENGTH =   0xffff ;
+const(size_t) FCGI_MAX_LENGTH =   0xffff ;
 
 /*
  * Number of bytes in a FCGI_Header.  Future versions of the protocol
  * will not reduce this number.
  */
-const(int) FCGI_HEADER_LEN        =    8;
+const(ubyte) FCGI_HEADER_LEN        =    8;
 
 /*
  * Value for version component of FCGI_Header
  */
-const(int) FCGI_VERSION_1         =     1;
+const(ubyte) FCGI_VERSION_1         =     1;
 
 /*
  * Values for type component of FCGI_Header
  */
-const(int) FCGI_BEGIN_REQUEST     =     1;
-const(int) FCGI_ABORT_REQUEST     =     2;
-const(int) FCGI_END_REQUEST       =     3;
-const(int) FCGI_PARAMS            =     4;
-const(int) FCGI_STDIN             =     5;
-const(int) FCGI_STDOUT            =     6;
-const(int) FCGI_STDERR            =     7;
-const(int) FCGI_DATA              =     8;
-const(int) FCGI_GET_VALUES        =     9;
-const(int) FCGI_GET_VALUES_RESULT =    10;
-const(int) FCGI_UNKNOWN_TYPE      =    11;
-const(int) FCGI_MAXTYPE           =    FCGI_UNKNOWN_TYPE;
+const(ubyte) FCGI_BEGIN_REQUEST     =     1;
+const(ubyte) FCGI_ABORT_REQUEST     =     2;
+const(ubyte) FCGI_END_REQUEST       =     3;
+const(ubyte) FCGI_PARAMS            =     4;
+const(ubyte) FCGI_STDIN             =     5;
+const(ubyte) FCGI_STDOUT            =     6;
+const(ubyte) FCGI_STDERR            =     7;
+const(ubyte) FCGI_DATA              =     8;
+const(ubyte) FCGI_GET_VALUES        =     9;
+const(ubyte) FCGI_GET_VALUES_RESULT =    10;
+const(ubyte) FCGI_UNKNOWN_TYPE      =    11;
+const(ubyte) FCGI_MAXTYPE           =    FCGI_UNKNOWN_TYPE;
 
 /*
  * Value for requestId component of FCGI_Header
  */
-const(int) FCGI_NULL_REQUEST_ID =       0;
+const(ubyte) FCGI_NULL_REQUEST_ID =       0;
 
 
 struct FCGI_BeginRequestBody {
@@ -60,21 +63,21 @@ struct FCGI_BeginRequestBody {
 }
 
 struct FCGI_BeginRequestRecord {
-    FCGI_Header             headerHtml;
-    FCGI_BeginRequestBody   bodyHtml;
+    FCGI_Header             fcgiHeader;
+    FCGI_BeginRequestBody   fcgiBody;
 }
 
 /*
  * Mask for flags component of FCGI_BeginRequestBody
  */
-const(int) FCGI_KEEP_CONN =    1;
+const(ubyte) FCGI_KEEP_CONN =    1;
 
 /*
  * Values for role component of FCGI_BeginRequestBody
  */
-const(int) FCGI_RESPONDER  =   1;
-const(int) FCGI_AUTHORIZER =   2;
-const(int) FCGI_FILTER     =   3;
+const(ubyte) FCGI_RESPONDER  =   1;
+const(ubyte) FCGI_AUTHORIZER =   2;
+const(ubyte) FCGI_FILTER     =   3;
 
 
 struct FCGI_EndRequestBody {
@@ -87,17 +90,17 @@ struct FCGI_EndRequestBody {
 }
 
 struct FCGI_EndRequestRecord {
-    FCGI_Header         headerHtml;
-    FCGI_EndRequestBody bodyHtml;
+    FCGI_Header         fcgiHeader;
+    FCGI_EndRequestBody fcgiBody;
 }
 
 /*
  * Values for protocolStatus component of FCGI_EndRequestBody
  */
-const(int) FCGI_REQUEST_COMPLETE =   0;
-const(int) FCGI_CANT_MPX_CONN    =   1;
-const(int) FCGI_OVERLOADED       =   2;
-const(int) FCGI_UNKNOWN_ROLE     =   3;
+const(ubyte) FCGI_REQUEST_COMPLETE =   0;
+const(ubyte) FCGI_CANT_MPX_CONN    =   1;
+const(ubyte) FCGI_OVERLOADED       =   2;
+const(ubyte) FCGI_UNKNOWN_ROLE     =   3;
 
 
 /*
@@ -114,8 +117,47 @@ struct FCGI_UnknownTypeBody {
 }
 
 struct FCGI_UnknownTypeRecord {
-    FCGI_Header             headerHtml;
-    FCGI_UnknownTypeBody    bodyHtml;
+    FCGI_Header             fcgiHeader;
+    FCGI_UnknownTypeBody    fcgiBody;
 }
 
 }
+/**
+ * MakeHeader --
+ * Constructs an FCGI_Header struct.
+ */
+static FCGI_Header MakeHeader( ubyte type, int requestId, int contentLength, int paddingLength){
+    FCGI_Header header;
+    assert(contentLength >= 0 && contentLength <= FCGI_MAX_LENGTH);
+    assert(paddingLength >= 0 && paddingLength <= 0xff);
+    header.FCGI_version     = FCGI_VERSION_1;
+    header.type             = type;
+    header.requestIdB1      = cast(ubyte) ((requestId     >> 8) & 0xff);
+    header.requestIdB0      = cast(ubyte) ((requestId         ) & 0xff);
+    header.contentLengthB1  = cast(ubyte) ((contentLength >> 8) & 0xff);
+    header.contentLengthB0  = cast(ubyte) ((contentLength     ) & 0xff);
+    header.paddingLength    = cast(ubyte) paddingLength;
+    header.reserved         =  0;
+    return header;
+}
+
+/*
+ *----------------------------------------------------------------------
+ *
+ * MakeBeginRequestBody --
+ *
+ *      Constructs an FCGI_BeginRequestBody record.
+ *
+ *----------------------------------------------------------------------
+ */
+static FCGI_BeginRequestBody MakeBeginRequestBody( ubyte role, ubyte keepConnection){
+    FCGI_BeginRequestBody requestBody;
+    assert( (role >> 16) == 0 );
+    requestBody.roleB1 = ((role >>  8) & 0xff);
+    requestBody.roleB0 = (role         & 0xff);
+    requestBody.flags  = ((keepConnection) ? Flag.KeepAlive : Flag.NoFlag);
+    memset( cast(void*) requestBody.reserved, 0, requestBody.reserved.sizeof );
+    return requestBody;
+}
+
+static int exitStatus = 0;

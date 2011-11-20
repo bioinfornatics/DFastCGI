@@ -59,6 +59,8 @@ const(int) FCGI_FAIL_ACCEPT_ON_INTR  = 1;
  * FCGX_Request -- State associated with a request.
  *
  * Its exposed for API simplicity, I expect parts of it to change!
+ * Params:
+ *  - Role: FCGI_RESPONDER, FCGI_AUTHORIZER, FCGI_FILTER from import fastcgi.c.fastcgi
  */
 struct FCGX_Request {
     int requestId;              /* valid if isBeginProcessed */
@@ -91,7 +93,7 @@ struct FCGX_Request {
  *
  * FCGX_IsCGI --
  *
- *      Returns TRUE iff this process appears to be a CGI process
+ *      Returns TRUE if this process appears to be a CGI process
  *      rather than a FastCGI process.
  *
  *----------------------------------------------------------------------
