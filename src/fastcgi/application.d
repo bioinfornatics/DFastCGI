@@ -6,43 +6,20 @@ import std.cpuid        : threadsPerCPU;
 import fastcgi.request;
 import fastcgi.connection;
 
-class Page{
+void webPage( void function(Request) handler ){
+    Connection connection   = new Connection();
+    Request request         = new Request( connection );
+    while( request.accept() ){
+        handler( request );
+    }
 
-    private:
-        Connection              _connection;
-        Request                 _request;
-        bool                    _isRunning;
-        void function(Request)  _handler;
+}
 
-    public:
-
-        this( void function(Request) handler ){
-            _connection = new Connection();
-            _handler    = handler;
-            _isRunning  = true;
-            _request    = new Request( _connection );
-        }
-
-        this( Connection connection, void function(Request) handler ){
-            _connection = connection;
-            _handler    = handler;
-            _isRunning  = true;
-            _request    = new Request( _connection );
-        }
-
-        ~this(){
-            stop();
-        }
-
-        void run(){
-            while( _isRunning ){
-                _handler( _request );
-            }
-        }
-
-        void stop(){
-            _isRunning = false;
-        }
+void webPage( Connection connection, void function(Request) handler ){
+    Request  request    = new Request( connection );
+    while( request.accept() ){
+        handler( request );
+    }
 }
 
 class Application{
@@ -51,10 +28,10 @@ class Application{
         Connection      _connection;
 
     public:
-        this( Connection connection, Page pages... ){
+        this( Connection connection, void function(Request)[] handlers... ){
             _connection = connection;
             _taskPool   = new TaskPool( totalCPUs * threadsPerCPU + 1);
-            addPages( pages );
+            add( handlers );
         }
 
         this( Connection connection = null ){
@@ -69,17 +46,9 @@ class Application{
             _taskPool.finish();
         }
 
-        void addPages( Page pages... ){
-            foreach( Page page; pages ){
-                auto t = task!page.run();
-                _taskPool.put( t );
-            }
-        }
-
-        void add( void function(Request) handlers... ){
+        void add( void function(Request)[] handlers... ){
             foreach( handler; handlers ){
-                Page page = new Page( _connection, handler );
-                auto t = task!page.run();
+                auto t = task!webPage( _connection, handler);
                 _taskPool.put( t );
             }
         }

@@ -31,7 +31,7 @@ class Request{
                 connection = new Connection();
 
             _connection = connection;
-
+            FCGX_InitRequest( &_request, 0, 0 );
         }
 
         ~this(){
@@ -46,7 +46,6 @@ class Request{
          * Returns: true for succefull call
          */
         bool accept(){
-            FCGX_InitRequest( &_request, 0, 0 );
             return ( FCGX_Accept_r( &_request ) >= 0 ) ? true : false;
         }
 
@@ -121,10 +120,6 @@ class Request{
                 int code = FCGX_GetError( _request.streamOut );
                 throw new StreamException("Error %d: during write formatted string".format( code ) );
             }
-        }
-
-        bool accept(){
-            return _connection.listenSocket >= 0;
         }
 
         void finish(){
