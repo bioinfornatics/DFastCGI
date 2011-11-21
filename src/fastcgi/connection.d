@@ -5,6 +5,7 @@ import std.process;
 import std.conv;
 
 import fastcgi.exception;
+import fastcgi.log;
 import fastcgi.c.fastcgi : FCGI_LISTENSOCK_FILENO;
 import fastcgi.c.fcgiapp;
 
@@ -16,17 +17,24 @@ class Connection{
         string          _socketPath;
 
         void init( string socketPath = null, int backlog = 0  ){
+            logMessage( "Connection: Initialize" );
             string adress   = to!string( getenv( "FCGI_WEB_SERVER_ADDRS" ) );
             _validAddress   = ( adress == "0" ) ? null : adress.split(",");
             _socketPath     = socketPath;
             _backlog        = backlog;
             int err         = FCGX_Init(); // call before Accept in multithreaded apps
-            if( err != 0 )
-                throw new ConnectionException( "Conection initialization failled" );
+            if( err != 0 ){
+                string msg  = "Error: FCGX library initialization failled";
+                logMessage( msg );
+                throw new FCGXException( msg );
+            }
             if( socketPath !is null ){
                 _listenSocket = FCGX_OpenSocket( _socketPath.toStringz, backlog );
-                if( _listenSocket == -1 )
-                    throw new ConnectionException( "Opening socket failled" );
+                if( _listenSocket == -1 ){
+                    string msg  = "Error: Opening socket failled";
+                    logMessage( msg );
+                    throw new ConnectionException( msg );
+                }
             }
             else
                 _listenSocket = FCGI_LISTENSOCK_FILENO;

@@ -1,11 +1,13 @@
 module fastcgi.request;
 import std.string;
 import std.conv;
+import std.variant;
 
 import fastcgi.c.fcgiapp;
 import fastcgi.c.fastcgi;
 import fastcgi.exception;
 import fastcgi.connection;
+import fastcgi.log;
 
 class Request{
     private:
@@ -31,7 +33,12 @@ class Request{
                 connection = new Connection();
 
             _connection = connection;
-            FCGX_InitRequest( &_request, 0, 0 );
+            int err     = FCGX_InitRequest( &_request, connection.listenSocket, 0 );
+            if( err != 0 ){
+                string msg  = "Error: Request initialization failled";
+                logMessage( msg );
+                throw new FCGXException( msg );
+            }
         }
 
         ~this(){
@@ -93,8 +100,11 @@ class Request{
                 int result = 0;
                 string line = readLine();
                 result = dg( line );
-                if( result )
-                    throw new Exception( "Error delegate fail during loop over stream" );
+                if( result ){
+                    string msg = "Error: delegate fail during loop over stream";
+                    logMessage( msg );
+                    throw new Exception( msg );
+                }
             }
         }
 
@@ -108,8 +118,10 @@ class Request{
         void write(string message){
             int err = FCGX_PutStr( message.toStringz, cast(int)message.length, _request.streamOut );
             if( err == -1 ){
-                int code = FCGX_GetError( _request.streamOut );
-                throw new StreamException("Error %d: during write string".format( code ) );
+                int code    = FCGX_GetError( _request.streamOut );
+                string msg  = "Error %d: during write string".format( code );
+                logMessage( msg );
+                throw new StreamException( msg );
             }
         }
 
@@ -121,12 +133,15 @@ class Request{
          * output.write( "hi, i am %d years old", 17);
          */
         void writef(T...)( T messages ){
-            foreach( ref message; messages )
-                Variant msg = new Variant(message);
-            int err = FCGX_FPrintF(  _request.streamOut, _stream, msg.get!(string).toStringz );
-            if( err == -1 ){
-                int code = FCGX_GetError( _request.streamOut );
-                throw new StreamException("Error %d: during write formatted string".format( code ) );
+            foreach( message; messages ){
+                Variant variant = message;
+                int err = FCGX_FPrintF(  _request.streamOut, variant.get!(string).toStringz );
+                if( err == -1 ){
+                    int code = FCGX_GetError( _request.streamOut );
+                    string msg  = "Error %d: during write formatted string".format( code );
+                    logMessage( msg );
+                    throw new StreamException( msg );
+                }
             }
         }
 

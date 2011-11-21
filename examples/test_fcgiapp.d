@@ -1,5 +1,4 @@
 import std.string;
-import std.stdio;
 import std.conv;
 import std.c.process    : getpid;
 import fastcgi.c.fcgiapp;
@@ -11,7 +10,6 @@ void main( string[] args ){
     FCGX_ParamArray envp;
     int count = 0;
     while(FCGX_Accept(&streamIn, &streamOut, &streamErr, &envp) >= 0){
-        debug writeln( "CGI Loop" );
         int err = FCGX_Init(); /* call before Accept in multithreaded apps */
         FCGX_FPrintF(streamOut,
                "Content-type: text/html\n\n"

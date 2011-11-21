@@ -41,6 +41,7 @@ class Application{
         @property Connection connection(){
             return _connection;
         }
+
     static:
         void webPage( void function(Request) handler ){
             Application app         = new Application();

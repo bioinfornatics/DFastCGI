@@ -34,3 +34,11 @@ PROBLEMS
 If your application fail during build because it do not found symbol provides by this library you could do:
  # ldd /path/to/lib/libDFastCGI.so
  # ldconfig /path/to/libdir/
+
+
+LOGGING
+--------
+You can enable logging by using one of this commands:
+ $ export DFASTCGI_DEBUG=TRUE
+ $ export DFASTCGI_DEBUG=true
+ $ export DFASTCGI_DEBUG=1

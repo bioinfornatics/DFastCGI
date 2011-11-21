@@ -14,3 +14,9 @@ class StreamException : Exception {
         super( message, __FILE__, __LINE__ );
     }
 }
+
+class FCGXException : Exception {
+    this( string message, string file = __FILE__, size_t line = __LINE__ ){
+        super( message, __FILE__, __LINE__ );
+    }
+}
