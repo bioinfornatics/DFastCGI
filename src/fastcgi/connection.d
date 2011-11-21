@@ -11,13 +11,15 @@ import fastcgi.c.fcgiapp;
 class Connection{
     private:
         int             _listenSocket;
+        int             _backlog;
         string[]        _validAddress;
         string          _socketPath;
 
         void init( string socketPath = null, int backlog = 0  ){
             string adress   = to!string( getenv( "FCGI_WEB_SERVER_ADDRS" ) );
-            _validAddress = ( adress == "0" ) ? null : adress.split(",");
+            _validAddress   = ( adress == "0" ) ? null : adress.split(",");
             _socketPath     = socketPath;
+            _backlog        = backlog;
             int err         = FCGX_Init(); // call before Accept in multithreaded apps
             if( err != 0 )
                 throw new ConnectionException( "Conection initialization failled" );
@@ -42,8 +44,19 @@ class Connection{
             init( );
         }
 
+        this( int listenSocket, string[] validAddress, string socketPath ){
+            _listenSocket   = listenSocket;
+            _validAddress   = validAddress;
+            _socketPath     = socketPath;
+            init( _socketPath, _backlog );
+        }
+
         ~this(){
             finnish();
+        }
+
+        Connection dup(){
+            return new Connection( _listenSocket,  _validAddress, _socketPath );
         }
 
         /**

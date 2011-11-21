@@ -6,21 +6,6 @@ import std.cpuid        : threadsPerCPU;
 import fastcgi.request;
 import fastcgi.connection;
 
-void webPage( void function(Request) handler ){
-    Connection connection   = new Connection();
-    Request request         = new Request( connection );
-    while( request.accept() ){
-        handler( request );
-    }
-
-}
-
-void webPage( Connection connection, void function(Request) handler ){
-    Request  request    = new Request( connection );
-    while( request.accept() ){
-        handler( request );
-    }
-}
 
 class Application{
     private:
@@ -48,8 +33,28 @@ class Application{
 
         void add( void function(Request)[] handlers... ){
             foreach( handler; handlers ){
-                auto t = task!webPage( _connection, handler);
+                auto t = task!webPage( this, handler);
                 _taskPool.put( t );
+            }
+        }
+
+        @property Connection connection(){
+            return _connection;
+        }
+    static:
+        void webPage( void function(Request) handler ){
+            Application app         = new Application();
+            Request request         = new Request( app.connection );
+            while( request.accept() ){
+                handler( request );
+            }
+
+        }
+
+        void webPage( Application app, void function(Request) handler ){
+            Request  request    = new Request( app.connection );
+            while( request.accept() ){
+                handler( request );
             }
         }
 

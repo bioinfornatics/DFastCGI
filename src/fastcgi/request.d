@@ -40,6 +40,14 @@ class Request{
                 FCGX_Free( &_request, 1);
         }
 
+        @property Connection connection(){
+            return _connection.dup;
+        }
+
+        @property void connection( Connection connection ){
+            _connection = connection;
+        }
+
         /**
          * accept
          * Initialize and accept a new request (multi-thread safe).
