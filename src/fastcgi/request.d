@@ -35,10 +35,11 @@ class Request{
             _connection = connection;
             int err     = FCGX_InitRequest( &_request, connection.listenSocket, 0 );
             if( err != 0 ){
-                string msg  = "Error: Request initialization failled";
+                string msg  = "Error: Request %s initialization failled".format( &this );
                 logMessage( msg );
                 throw new FCGXException( msg );
             }
+            logMessage( "Request: %s Initialized".format( &this ) );
         }
 
         ~this(){
@@ -61,7 +62,9 @@ class Request{
          * Returns: true for succefull call
          */
         bool accept(){
-            return ( FCGX_Accept_r( &_request ) >= 0 ) ? true : false;
+            bool result = ( FCGX_Accept_r( &_request ) >= 0 ) ? true : false;
+            logMessage( "Request %s accept: %s".format( &this, result ) );
+            return result;
         }
 
         /**
@@ -85,6 +88,7 @@ class Request{
                         isRunning = false;
                 }
             }
+            logMessage( "Request %s, read:\n%s".format( &this, result ) );
             return result;
         }
 
@@ -101,7 +105,7 @@ class Request{
                 string line = readLine();
                 result = dg( line );
                 if( result ){
-                    string msg = "Error: delegate fail during loop over stream";
+                    string msg = "Error: Request %s, delegate fail during loop over stream".format( &this );
                     logMessage( msg );
                     throw new Exception( msg );
                 }
@@ -116,10 +120,11 @@ class Request{
          * output.write( "hi, how are you?\n");
          */
         void write(string message){
+            logMessage( "Request %s, write:\n%s".format( &this, message) );
             int err = FCGX_PutStr( message.toStringz, cast(int)message.length, _request.streamOut );
             if( err == -1 ){
                 int code    = FCGX_GetError( _request.streamOut );
-                string msg  = "Error %d: during write string".format( code );
+                string msg  = "Error %d: Request %s, during write string".format( code, &this );
                 logMessage( msg );
                 throw new StreamException( msg );
             }
@@ -138,7 +143,7 @@ class Request{
                 int err = FCGX_FPrintF(  _request.streamOut, variant.get!(string).toStringz );
                 if( err == -1 ){
                     int code = FCGX_GetError( _request.streamOut );
-                    string msg  = "Error %d: during write formatted string".format( code );
+                    string msg  = "Error %d: Request %s, during write formatted string".format( code, &this );
                     logMessage( msg );
                     throw new StreamException( msg );
                 }

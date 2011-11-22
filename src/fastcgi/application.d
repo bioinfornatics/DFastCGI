@@ -13,12 +13,6 @@ class Application{
         Connection      _connection;
 
     public:
-        this( Connection connection, void function(Request)[] handlers... ){
-            _connection = connection;
-            _taskPool   = new TaskPool( totalCPUs * threadsPerCPU + 1);
-            add( handlers );
-        }
-
         this( Connection connection = null ){
             if( connection is null )
                 _connection = new Connection();
