@@ -27,6 +27,11 @@ EXAMPLES
 for build and test example you need link to your fastcgi library. I assume DFastCGI lib is build with ldc:
 $ ldc2 -O -g -w -I=/usr/local/include/d/DFastCGI/ -L-lDFastCGI-ldc -L-lfcgi test_fcgiapp.d
 $ su -c 'install -o lighthttpd test_fcgiapp.fcgi /var/www/cgi-bin/test_fcgiapp.fcgi'
+    Do not works:
+    ------------
+    * test_fcgi_stdio.d
+    * test_thread_fcgiapp.d (maybe ldc issue)
+    * test_request.d and test_fcgi_application.d isuspect for same reason around D to C interface
 
 
 PROBLEMS
@@ -42,3 +47,5 @@ You can enable logging by using one of this commands:
  $ export DFASTCGI_DEBUG=TRUE
  $ export DFASTCGI_DEBUG=true
  $ export DFASTCGI_DEBUG=1
+
+
