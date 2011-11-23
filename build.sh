@@ -202,11 +202,11 @@ case ${DC} in
             echo "not supported"
         else
             if [[ $VERBOSE -ge 2 ]]; then
-                echo -e "${DC} -link *.o -of ${LIBDIR_PATH}/libDFastCGI-${COMPILER}.a"
+                echo -e "${DC} -lib *.o -of ${LIBDIR_PATH}/libDFastCGI-${COMPILER}.a"
             fi
-            ${DC} -link  $(find . -name "*.o") -of ${LIBDIR_PATH}/libDFastCGI-${COMPILER}.a
+            ${DC} -lib  $(find . -name "*.o") -of ${LIBDIR_PATH}/libDFastCGI-${COMPILER}.a
             if [[ $? -ge 1 ]]; then
-                fail "${DC} -link"
+                fail "${DC} -lib"
             fi
         fi
         ;;
